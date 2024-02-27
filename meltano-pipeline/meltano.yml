@@ -1,0 +1,44 @@
+version: 1
+default_environment: dev
+project_id: 1e429678-dad3-4437-8506-e36b553e0c7c
+environments:
+- name: dev
+- name: staging
+- name: prod
+plugins:
+  extractors:
+  - name: tap-postgres
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-postgres.git
+    config:
+      sqlalchemy_url: postgresql://northwind_user:thewindisblowing@localhost:5432/northwind
+      default_replication_method: LOG_BASED
+      stream_maps:
+        public-products:
+          unit_price: float(unit_price)
+        public-orders:
+          freight: float(freight)
+    select:
+    - public-*.*
+  - name: tap-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+    config:
+  loaders:
+  - name: target-csv
+    variant: hotgluexyz
+    pip_url: git+https://github.com/hotgluexyz/target-csv.git
+    config:
+      destination_path: C:\Users\isabe\Documents\code-challenge-indicium\
+jobs:
+- name: postgres-to-csv
+  tasks:
+  - tap-postgres target-csv
+- name: csv-to-csv
+  tasks:
+  - tap-csv target-csv
+schedules:
+- name: save-data
+  interval: '@daily'
+  job: csv-to-csv
+
